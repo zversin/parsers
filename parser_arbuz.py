@@ -4,6 +4,7 @@ import json
 import re
 import sqlite3
 import datetime
+import configparser
 
 toplink = "https://arbuz.kz"
 city1 = "nur-sultan"
@@ -20,8 +21,10 @@ headers = {
     "sec-fetch-user": "?1",
     "accept-language": "en-US,en;q=0.9",
 }
+config = configparser.ConfigParser()
+config.read('.env')
+db = config.get('DB', 'db_path')
 
-db = "/home/user200/python/services/parsers/arbuz.db"
 postfix = "?available=0&sort=available%3A1%3B&limit=50&page="
 
 
@@ -29,11 +32,13 @@ class Product:
     name = str
     price = str
     link = str
+    city = str
 
-    def __init__(self, name, price, link):
+    def __init__(self, name, price, link, city):
         self.name = name
         self.price = price
         self.link = link
+        self.city = city
 
     def __repr__(self):
         return str(self.__dict__)
@@ -68,7 +73,7 @@ def getProducts(toplink, plink, headers, postfix):
 
 
 # insert product to db
-def addProduct(name, price, link, date, db):
+def addProduct(name, price, link, city, date, db):
     # create connection to DB
     conn = sqlite3.connect(db)
     cur = conn.cursor()
@@ -77,13 +82,14 @@ def addProduct(name, price, link, date, db):
     productid INT PRIMARY KEY,
     name TEXT,
     price TEXT,
+    city TEXT,
     date TEXT,
     link TEXT);
     """
     )
     conn.commit()
-    entry = (name, price, date, link)
-    cur.execute("INSERT INTO products (name,price,date,link) VALUES (?,?,?,?)", entry)
+    entry = (name, price, date, link, city)
+    cur.execute("INSERT INTO products (name,price,date,link, city) VALUES (?,?,?,?)", entry)
     # print(entry[0], entry[1])
     conn.commit()
 
@@ -118,15 +124,17 @@ products = []
 cnt = 0
 
 for link in links:
+    products.append(getProducts(toplink, link, headers, postfix))
+    print("working with " + link + " (" + str(cnt) + " out of " + str(len(links)) + ")")
     link = str(link).replace(city2, city1)
     products.append(getProducts(toplink, link, headers, postfix))
-    # print("working with " + link + " (" + str(cnt) + " out of " + str(len(links)) + ")")
+    print("working with " + link + " (" + str(cnt) + " out of " + str(len(links)) + ")")
     cnt += 1
 
 cnt = 0
 for product in products:
     for item in product:
-        addProduct(item.name, item.price, item.link, datetime.datetime.now(), db)
+        addProduct(item.name, item.price, item.link, item.city, datetime.datetime.now(), db)
         cnt += 1
 print(datetime.datetime.today().strftime('%Y-%m-%d'), "inserted number of rows:", cnt)
 

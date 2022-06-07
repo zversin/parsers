@@ -208,3 +208,12 @@ fabric.properties
 
 #Arbuz
 arbuz.db
+
+.idea/inspectionProfiles/
+.idea/misc.xml
+.idea/modules.xml
+.idea/parsers.iml
+arbuz.db.old
+page.html
+page.txt
+test.py
