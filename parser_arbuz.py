@@ -6,7 +6,8 @@ import sqlite3
 import datetime
 
 toplink = "https://arbuz.kz"
-
+city1 = "nur-sultan"
+city2 = "almaty"
 headers = {
     "authority": "www.yeezysupply.com",
     "cache-control": "max-age=0",
@@ -117,6 +118,7 @@ products = []
 cnt = 0
 
 for link in links:
+    link = str(link).replace(city2, city1)
     products.append(getProducts(toplink, link, headers, postfix))
     # print("working with " + link + " (" + str(cnt) + " out of " + str(len(links)) + ")")
     cnt += 1
