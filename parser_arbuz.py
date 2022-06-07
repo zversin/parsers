@@ -42,16 +42,25 @@ class Product:
 def getProducts(toplink, plink, headers, postfix):
     result = []
     pageCount = getProductPageCount(toplink, plink, headers, postfix)
-    #print("page number for " + plink + " is " + str(pageCount))
+    # print("page number for " + plink + " is " + str(pageCount))
     for i in range(1, pageCount + 1):
-        #print("curlink is " + toplink + plink + postfix + str(i))
+        # print("curlink is " + toplink + plink + postfix + str(i))
         response = session.get(toplink + plink + postfix + str(i), headers=headers)
         soup = BeautifulSoup(response.text, "html.parser")
-        for element in soup.find_all("div", class_="product-item-content title"):
-            name = element.find("a").text.strip()
-            price = element.find("div", class_="mr-2").text.strip()
-            link = toplink + element.find("a").get("href")
+        # Find product list
+        product_list = soup.find("div", class_="product-card-list")
+        children = product_list.findChildren()
+        for child in children:
+            # get json via regexp
+            r1 = re.findall(r":product='(.*)'", str(child))
+            # load json
+            y = json.loads(r1[0])
+
+            name = y['name']
+            price = y['priceActual']
+            link = toplink + y['uri']
             product = Product(name, price, link)
+            # print(name, price, link, product, "00")
             # print(product.__repr__())
             result.append(product)
     return result
@@ -74,7 +83,7 @@ def addProduct(name, price, link, date, db):
     conn.commit()
     entry = (name, price, date, link)
     cur.execute("INSERT INTO products (name,price,date,link) VALUES (?,?,?,?)", entry)
-    #print(entry[0], entry[1])
+    # print(entry[0], entry[1])
     conn.commit()
 
 
@@ -109,18 +118,15 @@ cnt = 0
 
 for link in links:
     products.append(getProducts(toplink, link, headers, postfix))
-    #print("working with " + link + " (" + str(cnt) + " out of " + str(len(links)) + ")")
+    # print("working with " + link + " (" + str(cnt) + " out of " + str(len(links)) + ")")
     cnt += 1
 
-
-
-cnt=0
+cnt = 0
 for product in products:
     for item in product:
         addProduct(item.name, item.price, item.link, datetime.datetime.now(), db)
-        cnt+=1
+        cnt += 1
 print(datetime.datetime.today().strftime('%Y-%m-%d'), "inserted number of rows:", cnt)
-
 
 """soup = BeautifulSoup(response.text, 'html.parser')
 response = session.get('https://arbuz.kz/ru/almaty/catalog/cat/20118-hleb_vypechka?available=0&sort=available%3A1%3B&limit=50&page=1#/', headers=headers)
